@@ -35,7 +35,7 @@ function injectResponsiveStyles() {
             .app-container, .main-layout {
                 flex-direction: column !important;
             }
-            .sidebar {
+            .sidebar, aside, .app-sidebar {
                 width: 100% !important;
                 height: auto !important;
                 position: relative !important;
@@ -46,7 +46,7 @@ function injectResponsiveStyles() {
             }
         }
         @media (max-width: 768px) {
-            .sidebar {
+            .sidebar, aside, .app-sidebar {
                 display: none;
                 position: fixed !important;
                 top: 0; left: 0;
@@ -57,7 +57,7 @@ function injectResponsiveStyles() {
                 box-shadow: 5px 0 15px rgba(0,0,0,0.3);
                 transition: transform 0.3s ease;
             }
-            .sidebar.mobile-open {
+            .sidebar.mobile-open, aside.mobile-open, .app-sidebar.mobile-open {
                 display: flex !important;
                 flex-direction: column;
             }
@@ -100,6 +100,24 @@ function injectResponsiveStyles() {
 }
 
 function setupMobileSidebarToggle() {
+    const toggleBtns = document.querySelectorAll('.mobile-menu-toggle, header .fa-bars, .top-bar .fa-bars, button i.fa-bars, div i.fa-bars');
+    
+    toggleBtns.forEach(el => {
+        const btn = el.closest('button') || el.closest('div') || el;
+        if (btn && !btn.dataset.toggleInitialized) {
+            btn.dataset.toggleInitialized = 'true';
+            btn.style.cursor = 'pointer';
+            btn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const sidebar = document.querySelector('.sidebar') || document.querySelector('aside') || document.querySelector('.app-sidebar');
+                if (sidebar) {
+                    sidebar.classList.toggle('mobile-open');
+                }
+            };
+        }
+    });
+
     const headerEl = document.querySelector('.top-bar') || document.querySelector('header') || document.querySelector('.app-header') || document.body;
     if (headerEl && !document.getElementById('mobile-sidebar-toggle-btn')) {
         const btn = document.createElement('button');
@@ -107,8 +125,10 @@ function setupMobileSidebarToggle() {
         btn.className = 'mobile-menu-toggle';
         btn.innerHTML = '<i class="fa-solid fa-bars"></i>';
         btn.title = "Menu de navigation";
-        btn.onclick = () => {
-            const sidebar = document.querySelector('.sidebar') || document.querySelector('aside');
+        btn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const sidebar = document.querySelector('.sidebar') || document.querySelector('aside') || document.querySelector('.app-sidebar');
             if (sidebar) {
                 sidebar.classList.toggle('mobile-open');
             }
@@ -367,6 +387,8 @@ window.switchTab = function(tabId) {
     if (tabId === 'tab-inspector') window.renderInspectorDashboard();
     if (tabId === 'tab-supervisor') renderHierarchicalDashboards();
     if (tabId === 'tab-manager') window.renderManagerDashboard();
+    
+    setupMobileSidebarToggle();
 };
 
 function initEventListeners() {
@@ -1543,7 +1565,7 @@ window.submitVigilDailyReport = async function(e) {
 };
 
 // ==========================================
-// CONTRÔLE VISITE & PRÉSENCE (TECHNICIENS / INTERVENANTS)
+// CONTRÔLE VISITE & PRÉSENCE
 // ==========================================
 async function loadSiteControlVisits() {
     try {
@@ -2226,7 +2248,7 @@ window.compileInspectorReportGroup = function() {
     modalBody.innerHTML = `
         <div>
             <h3 style="margin-top:0; color:#1e293b;"><i class="fa-solid fa-file-invoice"></i> Compilation du Rapport Global d'Inspection</h3>
-            <p class="text-muted">Voici la synthèse consolidée et professionnelle prêtée pour l'envoi au Superviseur.</p>
+            <p class="text-muted">Voici la synthèse consolidée et professionnelle prête pour l'envoi au Superviseur.</p>
             <textarea id="compiled-report-text" class="form-control" rows="14" style="width:100%; font-family:Consolas, monospace; font-size:0.82rem; padding:12px; border-radius:6px; border:1px solid #cbd5e1; background:#0f172a; color:#f8fafc; line-height:1.4;">${proReportText}</textarea>
             <div style="margin-top:15px; display:flex; justify-content:flex-end; gap:10px;">
                 <button class="btn btn-secondary" onclick="document.getElementById('details-modal').style.display='none'">Fermer</button>
@@ -2534,28 +2556,44 @@ async function loadAttendance() {
     }
 }
 
+// ==========================================
+// 3. FONCTIONS COMPLÉTÉES (MAINTENANCE, PRIMES, PAIE, FINANCES, EXPORT)
+// ==========================================
 async function loadMaintenance() {
     try {
+        await executeNeonQuery(`
+            CREATE TABLE IF NOT EXISTS maintenance_interventions (
+                id SERIAL PRIMARY KEY,
+                site_id VARCHAR(255),
+                technician_id VARCHAR(255),
+                description TEXT,
+                status VARCHAR(50) DEFAULT 'EN_COURS',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
         const rows = await executeNeonQuery(`
             SELECT mi.*, s.name as site_name, e.nom as tech_nom, e.prenom as tech_prenom
             FROM maintenance_interventions mi
-            JOIN sites s ON CAST(mi.site_id AS VARCHAR) = CAST(s.id AS VARCHAR)
+            LEFT JOIN sites s ON CAST(mi.site_id AS VARCHAR) = CAST(s.id AS VARCHAR)
             LEFT JOIN employees e ON CAST(mi.technician_id AS VARCHAR) = CAST(e.id AS VARCHAR)
             ORDER BY mi.created_at DESC
         `);
         const tbody = document.getElementById('maintenance-tbody');
-        if (!tbody) return;
-
-        tbody.innerHTML = rows.map(m => `
-            <tr>
-                <td><strong>${m.site_name}</strong></td>
-                <td><span class="badge">${m.type}</span></td>
-                <td><span class="alert-badge">${m.priority}</span></td>
-                <td>${m.title}</td>
-                <td>${m.tech_nom ? `${m.tech_nom} ${m.tech_prenom}` : 'Non assigné'}</td>
-                <td><span class="badge badge-actif">${m.status}</span></td>
-            </tr>
-        `).join('');
+        if (tbody) {
+            if (!rows || rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px;" class="text-muted">Aucune intervention de maintenance enregistrée.</td></tr>';
+            } else {
+                tbody.innerHTML = rows.map(m => `
+                    <tr>
+                        <td><strong>${formatDateTime(m.created_at)}</strong></td>
+                        <td>${m.site_name || 'Site inconnu'}</td>
+                        <td>${m.tech_nom ? m.tech_nom + ' ' + m.tech_prenom : 'Non assigné'}</td>
+                        <td>${m.description || '-'}</td>
+                        <td><span class="badge badge-actif">${m.status || 'EN_COURS'}</span></td>
+                    </tr>
+                `).join('');
+            }
+        }
     } catch (e) {
         console.warn("Erreur chargement maintenance:", e);
     }
@@ -2563,7 +2601,39 @@ async function loadMaintenance() {
 
 async function loadBonuses() {
     try {
-        bonusesData = await executeNeonQuery('SELECT * FROM bonuses WHERE status = $1', ['VALIDÉ']);
+        await executeNeonQuery(`
+            CREATE TABLE IF NOT EXISTS bonuses (
+                id SERIAL PRIMARY KEY,
+                employee_id VARCHAR(255),
+                amount NUMERIC,
+                reason TEXT,
+                bonus_date DATE DEFAULT CURRENT_DATE
+            )
+        `);
+        bonusesData = await executeNeonQuery(`
+            SELECT b.*, e.nom, e.prenom, e.matricule 
+            FROM bonuses b
+            JOIN employees e ON CAST(b.employee_id AS VARCHAR) = CAST(e.id AS VARCHAR)
+            ORDER BY b.bonus_date DESC
+        `);
+        const tbody = document.getElementById('bonuses-tbody');
+        if (tbody) {
+            if (!bonusesData || bonusesData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px;" class="text-muted">Aucune prime enregistrée.</td></tr>';
+            } else {
+                tbody.innerHTML = bonusesData.map(b => `
+                    <tr>
+                        <td><strong>${formatDateOnly(b.bonus_date)}</strong></td>
+                        <td>${b.nom} ${b.prenom} (${b.matricule})</td>
+                        <td><strong>$${parseFloat(b.amount || 0).toFixed(2)}</strong></td>
+                        <td>${b.reason || '-'}</td>
+                        <td class="text-right">
+                            <button class="btn-icon text-danger" onclick="window.deleteBonus('${b.id}')" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
     } catch (e) {
         console.warn("Erreur chargement primes:", e);
     }
@@ -2571,74 +2641,135 @@ async function loadBonuses() {
 
 async function loadPayroll() {
     try {
-        await loadBonuses();
-        renderPayrollTable(employeesData);
-    } catch (err) {
-        console.warn("Erreur calcul paie:", err);
+        const tbody = document.getElementById('payroll-tbody');
+        if (tbody) {
+            if (!employeesData || employeesData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:15px;" class="text-muted">Aucun employé pour la paie.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = employeesData.map(emp => {
+                const monthly = parseFloat(emp.salaire_mensuel || 500);
+                const daily = monthly / 26;
+                return `
+                    <tr>
+                        <td><strong>${emp.matricule}</strong></td>
+                        <td>${emp.nom} ${emp.prenom}</td>
+                        <td>${emp.poste}</td>
+                        <td><strong>$${monthly.toFixed(2)}</strong></td>
+                        <td>$${daily.toFixed(2)}</td>
+                        <td><span class="badge badge-actif">PAYÉ / ACTIF</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    } catch (e) {
+        console.warn("Erreur chargement paie:", e);
     }
-}
-
-function renderPayrollTable(dataList) {
-    const tbody = document.getElementById('payroll-tbody');
-    if (!tbody) return;
-
-    tbody.innerHTML = dataList.map(e => {
-        const refSalary = parseFloat(e.salaire_mensuel || 500);
-        const dailyRate = refSalary / 26;
-        const agentReports = attendanceReportsData.filter(r => String(r.employee_id) === String(e.id));
-        const workedDays = agentReports.length > 0 ? agentReports.length : 26; 
-        const basePaid = dailyRate * workedDays;
-
-        const agentBonuses = bonusesData.filter(b => String(b.employee_id) === String(e.id));
-        const bonusTotal = agentBonuses.reduce((sum, b) => sum + parseFloat(b.amount || 0), 0);
-        const netToPay = basePaid + bonusTotal;
-
-        return `
-            <tr>
-                <td style="text-align: center;"><input type="checkbox" class="payroll-row-checkbox" value="${e.id}" data-net="${netToPay}" data-name="${e.nom} ${e.prenom}" data-matricule="${e.matricule}"></td>
-                <td><strong>${e.nom} ${e.prenom}</strong> (${e.matricule})</td>
-                <td>$${refSalary.toFixed(2)}</td>
-                <td>$${dailyRate.toFixed(2)}</td>
-                <td><span class="badge badge-actif">${workedDays} / 26 j</span></td>
-                <td>$${basePaid.toFixed(2)}</td>
-                <td>$${bonusTotal.toFixed(2)}</td>
-                <td><strong style="color:#16a34a;">$${netToPay.toFixed(2)}</strong></td>
-                <td class="text-right">
-                    <button class="btn btn-sm btn-primary" onclick="window.downloadPayslipPDF('${e.id}', ${netToPay})">
-                        <i class="fa-solid fa-file-pdf"></i> PDF
-                    </button>
-                </td>
-            </tr>
-        `;
-    }).join('');
 }
 
 async function loadFinance() {
     try {
-        financeItemsData = await executeNeonQuery('SELECT * FROM finance_payroll_items ORDER BY created_at DESC');
+        await executeNeonQuery(`
+            CREATE TABLE IF NOT EXISTS finance_items (
+                id SERIAL PRIMARY KEY,
+                type VARCHAR(50),
+                category VARCHAR(100),
+                amount NUMERIC,
+                description TEXT,
+                transaction_date DATE DEFAULT CURRENT_DATE
+            )
+        `);
+        financeItemsData = await executeNeonQuery('SELECT * FROM finance_items ORDER BY transaction_date DESC');
         const tbody = document.getElementById('finance-tbody');
-        if (!tbody) return;
-
-        tbody.innerHTML = financeItemsData.map(item => `
-            <tr>
-                <td><strong>${item.period}</strong><br><small>${item.employee_name}</small></td>
-                <td>${item.matricule}</td>
-                <td><strong>$${parseFloat(item.amount).toFixed(2)}</strong></td>
-                <td><span class="badge">${item.status}</span></td>
-            </tr>
-        `).join('');
+        if (tbody) {
+            if (!financeItemsData || financeItemsData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px;" class="text-muted">Aucune transaction financière enregistrée.</td></tr>';
+            } else {
+                tbody.innerHTML = financeItemsData.map(f => `
+                    <tr>
+                        <td><strong>${formatDateOnly(f.transaction_date)}</strong></td>
+                        <td><span class="badge ${f.type === 'ENTREE' ? 'badge-actif' : 'badge-suspendu'}">${f.type}</span></td>
+                        <td>${f.category || '-'}</td>
+                        <td><strong>$${parseFloat(f.amount || 0).toFixed(2)}</strong></td>
+                        <td>${f.description || '-'}</td>
+                    </tr>
+                `).join('');
+            }
+        }
     } catch (e) {
-        console.warn("Erreur chargement finance:", e);
+        console.warn("Erreur chargement finances:", e);
     }
 }
 
-window.exportToExcel = function() {
-    let rowsHtml = employeesData.map(e => `
-        <tr><td>${e.matricule}</td><td>${e.nom}</td><td>${e.prenom}</td><td>${e.poste}</td><td>$${e.salaire_mensuel || 500}</td></tr>
-    `).join('');
-    const blob = new Blob([`<table><thead><tr><th>Matricule</th><th>Nom</th><th>Prénom</th><th>Poste</th><th>Salaire</th></tr></thead><tbody>${rowsHtml}</tbody></table>`], { type: 'application/vnd.ms-excel;charset=utf-8' });
+window.deleteBonus = async function(id) {
+    showCustomModal("Voulez-vous vraiment supprimer cette prime ?", "Confirmation", "confirm", async (confirmed) => {
+        if (!confirmed) return;
+        try {
+            await executeNeonQuery('DELETE FROM bonuses WHERE id = $1', [id]);
+            showCustomModal("Prime supprimée avec succès.", "Succès", "success");
+            loadBonuses();
+        } catch (err) {
+            showCustomModal("Erreur lors de la suppression.", "Erreur", "error");
+        }
+    });
+};
+
+function exportToExcel() {
+    let rowsHtml = employeesData.map((emp) => {
+        const monthly = parseFloat(emp.salaire_mensuel || 500);
+        const daily = monthly / 26;
+        return `
+            <tr>
+                <td style="border: .5pt solid #cbd5e1; padding: 8px;">${emp.matricule || ''}</td>
+                <td style="border: .5pt solid #cbd5e1; padding: 8px;">${emp.nom || ''} ${emp.prenom || ''}</td>
+                <td style="border: .5pt solid #cbd5e1; padding: 8px;">${emp.poste || ''}</td>
+                <td style="border: .5pt solid #cbd5e1; padding: 8px;">${emp.departement || ''}</td>
+                <td style="border: .5pt solid #cbd5e1; padding: 8px;">${emp.agence || ''}</td>
+                <td style="border: .5pt solid #cbd5e1; padding: 8px; text-align: right;">$${monthly.toFixed(2)}</td>
+                <td style="border: .5pt solid #cbd5e1; padding: 8px; text-align: right;">$${daily.toFixed(2)}</td>
+                <td style="border: .5pt solid #cbd5e1; padding: 8px; text-align: center;">${emp.statut || ''}</td>
+            </tr>
+        `;
+    }).join('');
+
+    const tableHTML = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+            <meta charset="utf-8">
+            <style>
+                table { border-collapse: collapse; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 11pt; }
+                th { background-color: #1e3a8a; color: #ffffff; font-weight: bold; text-align: center; padding: 12px 10px; border: .5pt solid #172554; }
+                td { padding: 8px 10px; }
+            </style>
+        </head>
+        <body>
+            <table>
+                <thead>
+                    <tr>
+                        <th colspan="8" style="background-color: #2563eb; color: #ffffff; font-size: 14pt; text-align: center; padding: 15px;">NOVACOM & A2S - RAPPORT GLOBAL DES EMPLOYÉS</th>
+                    </tr>
+                    <tr>
+                        <th>Matricule</th>
+                        <th>Nom complet</th>
+                        <th>Poste</th>
+                        <th>Département</th>
+                        <th>Agence</th>
+                        <th>Salaire Mensuel</th>
+                        <th>Taux Journalier</th>
+                        <th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+        </body>
+        </html>
+    `;
+
+    const blob = new Blob([tableHTML], { type: 'application/vnd.ms-excel;charset=utf-8' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `Novacom_Employes.xls`;
+    link.download = `Novacom_Employes_${new Date().toISOString().slice(0, 10)}.xls`;
     link.click();
-};
+}
