@@ -1,0 +1,6 @@
+{
+  "appId": "com.novacom.rh",
+  "appName": "Novacom RH",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}

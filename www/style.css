@@ -1,0 +1,572 @@
+/* ==========================================================================
+   1. VARIABLES DE DESIGN & THEME
+   ========================================================================== */
+:root {
+    --primary-color: #1e40af;
+    --primary-hover: #1d4ed8;
+    --secondary-color: #64748b;
+    --secondary-hover: #475569;
+    --bg-main: #f8fafc;
+    --bg-card: #ffffff;
+    --text-color: #0f172a;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --transition: all 0.25s ease-in-out;
+}
+
+body.dark-mode {
+    --bg-main: #0f172a;
+    --bg-card: #1e293b;
+    --text-color: #f8fafc;
+    --text-muted: #94a3b8;
+    --border-color: #334155;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+/* ==========================================================================
+   2. REINITIALISATION & BASE
+   ========================================================================== */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-color);
+    line-height: 1.5;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ==========================================================================
+   3. AUTHENTIFICATION
+   ========================================================================== */
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+}
+
+.auth-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 420px;
+    padding: 35px 30px;
+}
+
+.auth-header h2 {
+    font-size: 1.5rem;
+    color: var(--text-color);
+    margin-bottom: 6px;
+}
+
+.auth-header p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 25px;
+}
+
+/* ==========================================================================
+   4. NAVIGATION BARRE (HEADER)
+   ========================================================================== */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--bg-card);
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.navbar-brand img {
+    border-radius: 4px;
+}
+
+.navbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-main);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    border: 1px solid var(--border-color);
+}
+
+.role-badge {
+    background: #2563eb;
+    color: #ffffff;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+/* ==========================================================================
+   5. DASHBOARD & KPIS
+   ========================================================================== */
+.main-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 25px 20px;
+}
+
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.kpi-card {
+    background: var(--bg-card);
+    padding: 20px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.kpi-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    color: #ffffff;
+}
+
+.bg-blue { background-color: #2563eb; }
+.bg-green { background-color: #10b981; }
+.bg-orange { background-color: #f59e0b; }
+
+.kpi-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.kpi-title {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.kpi-info h3 {
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+/* Barres de répartition agences */
+.segmented-bar-container {
+    width: 100%;
+    margin-top: 8px;
+}
+
+.bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    margin-bottom: 6px;
+}
+
+.segmented-bar {
+    display: flex;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--border-color);
+}
+
+.segment.novacom-seg { background: #2563eb; }
+.segment.a2s-seg { background: #06b6d4; }
+
+/* ==========================================================================
+   6. PANNEAU DE CONTROLE & FILTRES
+   ========================================================================== */
+.control-panel {
+    background: var(--bg-card);
+    padding: 16px 20px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 25px;
+}
+
+.search-box {
+    position: relative;
+    flex: 1 1 280px;
+}
+
+.search-box i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+}
+
+.search-box input {
+    width: 100%;
+    padding: 10px 12px 10px 38px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    background: var(--bg-main);
+    color: var(--text-color);
+    outline: none;
+    font-size: 0.9rem;
+}
+
+.filters-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.filters-group select {
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    background: var(--bg-main);
+    color: var(--text-color);
+    outline: none;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.actions-group {
+    display: flex;
+    gap: 10px;
+}
+
+/* ==========================================================================
+   7. TABLEAU DES DONNEES
+   ========================================================================== */
+.table-container {
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+.data-table th, 
+.data-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table th {
+    background-color: var(--bg-main);
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+}
+
+.data-table tbody tr:hover {
+    background-color: rgba(37, 99, 235, 0.03);
+}
+
+.badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: var(--border-color);
+}
+
+.badge-actif { background: #dcfce7; color: #166534; }
+.badge-suspendu { background: #fef3c7; color: #92400e; }
+.badge-inactif { background: #fee2e2; color: #991b1b; }
+
+.alert-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #fef3c7;
+    color: #b45309;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    margin-left: 5px;
+}
+
+/* ==========================================================================
+   8. SYSTEME DE MODALES (CORRECTION HAUTEUR & DEFLEMENT)
+   ========================================================================== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 15px;
+}
+
+.modal-content {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh; /* Empêche de dépasser de l'écran */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: modalSlideUp 0.25s ease-out;
+}
+
+.modal-content.modal-lg {
+    max-width: 850px;
+}
+
+@keyframes modalSlideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.modal-header h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    line-height: 1;
+}
+
+.modal-close:hover {
+    color: var(--text-color);
+}
+
+/* CORPS SCROLLABLE DE LA MODALE */
+.modal-body, #employee-form {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    max-height: calc(90vh - 130px); /* Ajustement pour préserver header et footer */
+}
+
+#employee-form {
+    overflow: hidden; /* Géré par le form-grid */
+}
+
+.form-grid {
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2 colonnes sur écran PC */
+    gap: 16px;
+    overflow-y: auto;
+    max-height: calc(90vh - 140px);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.form-group input,
+.form-group select {
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    background: var(--bg-main);
+    color: var(--text-color);
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.doc-upload-row {
+    display: flex;
+    gap: 10px;
+}
+
+/* PIED DE MODALE FIXE */
+.modal-footer {
+    padding: 14px 24px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    background: var(--bg-card);
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+}
+
+/* ==========================================================================
+   9. BOUTONS & ELEMENTS FORMULAIRE
+   ========================================================================== */
+.btn {
+    padding: 9px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: var(--transition);
+}
+
+.btn-primary { background: var(--primary-color); color: #ffffff; }
+.btn-primary:hover { background: var(--primary-hover); }
+
+.btn-secondary { background: var(--secondary-color); color: #ffffff; }
+.btn-secondary:hover { background: var(--secondary-hover); }
+
+.btn-danger { background: #ef4444; color: #ffffff; }
+.btn-danger:hover { background: #dc2626; }
+
+.btn-block { width: 100%; justify-content: center; }
+.btn-sm { padding: 5px 10px; font-size: 0.78rem; }
+
+.btn-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--text-muted);
+    padding: 6px;
+    border-radius: 4px;
+}
+
+.btn-icon:hover { color: var(--text-color); background: var(--border-color); }
+.text-right { text-align: right; }
+
+/* ==========================================================================
+   10. RESPONSIVITE COMPLETE (MOBILE & TABLETTE)
+   ========================================================================== */
+@media (max-width: 992px) {
+    .navbar {
+        padding: 10px 16px;
+    }
+    .navbar-brand h1 {
+        font-size: 1.1rem !important;
+    }
+    .user-badge span#user-email {
+        display: none; /* Masque l'email sur mobile pour libérer de l'espace */
+    }
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        padding: 15px 10px;
+    }
+    
+    .control-panel {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filters-group, .actions-group {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .filters-group select, .actions-group .btn {
+        width: 100%;
+    }
+
+    /* PASSAGE DU FORMULAIRE DE LA MODALE EN 1 SEULE COLONNE SUR MOBILE */
+    .form-grid {
+        grid-template-columns: 1fr;
+        padding: 15px;
+    }
+
+    .doc-upload-row {
+        flex-direction: column;
+    }
+
+    .modal-content {
+        max-height: 95vh;
+        margin: 5px;
+    }
+
+    .modal-header, .modal-footer {
+        padding: 12px 16px;
+    }
+}

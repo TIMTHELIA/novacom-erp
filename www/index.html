@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novacom - RH & Gestion du Personnel</title>
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+    <!-- FontAwesome pour les icônes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Supabase JS Client (Pour Auth & Storage) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- SDK Neon Serverless (Version UMD globale) -->
+    <script src="https://cdn.jsdelivr.net/npm/@neondatabase/serverless@0.9.0/index.mjs" type="module"></script>
+</head>
+<body>
+
+    <!-- ÉCRAN D'AUTHENTIFICATION -->
+    <div id="auth-screen" class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header" style="text-align: center;">
+                <!-- LOGO DANS L'AUTHENTIFICATION -->
+                <img src="logo.jpeg" alt="Novacom Logo" style="max-width: 160px; height: auto; margin-bottom: 15px;">
+                <h2>Novacom RH</h2>
+                <p>Connectez-vous pour accéder au système de gestion</p>
+            </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email"><i class="fa-solid fa-envelope"></i> Adresse E-mail</label>
+                    <input type="email" id="login-email" required placeholder="nom@novacom.cd">
+                </div>
+                <div class="form-group">
+                    <label for="login-password"><i class="fa-solid fa-lock"></i> Mot de passe</label>
+                    <input type="password" id="login-password" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="btn-login">
+                    <i class="fa-solid fa-right-to-bracket"></i> Se connecter
+                </button>
+            </form>
+            <div id="auth-error" class="error-message" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- APPLICATION PRINCIPALE -->
+    <div id="app-screen" class="app-container" style="display: none;">
+
+        <!-- NAVBAR -->
+        <header class="navbar">
+            <div class="navbar-brand" style="display: flex; align-items: center; gap: 12px;">
+                <!-- LOGO DANS LA NAVBAR -->
+                <img src="logo.jpeg" alt="Novacom Logo" style="height: 38px; width: auto; object-fit: contain;">
+                <h1 style="margin: 0; font-size: 1.25rem;">Novacom & A2S RH</h1>
+            </div>
+            <div class="navbar-actions">
+                <button id="theme-toggle" class="btn-icon" title="Changer le thème">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+                <div class="user-badge">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <span id="user-email">user@domain.com</span>
+                    <span id="user-role" class="role-badge">Admin</span>
+                </div>
+                <button id="btn-logout" class="btn btn-danger btn-sm">
+                    <i class="fa-solid fa-power-off"></i> Déconnexion
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            <section class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-icon bg-blue"><i class="fa-solid fa-users"></i></div>
+                    <div class="kpi-info">
+                        <span class="kpi-title">Effectif Total</span>
+                        <h3 id="kpi-total">0</h3>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon bg-green"><i class="fa-solid fa-user-check"></i></div>
+                    <div class="kpi-info">
+                        <span class="kpi-title">Employés Actifs</span>
+                        <h3 id="kpi-actives">0</h3>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon bg-orange"><i class="fa-solid fa-user-clock"></i></div>
+                    <div class="kpi-info">
+                        <span class="kpi-title">En Congé / Suspendus</span>
+                        <h3 id="kpi-on-leave">0</h3>
+                    </div>
+                </div>
+                <div class="kpi-card agency-card">
+                    <span class="kpi-title">Répartition Agences</span>
+                    <div class="segmented-bar-container">
+                        <div class="bar-labels">
+                            <span>Novacom: <strong id="count-novacom">0</strong></span>
+                            <span>A2S: <strong id="count-a2s">0</strong></span>
+                        </div>
+                        <div class="segmented-bar">
+                            <div id="bar-novacom" class="segment novacom-seg" style="width: 50%;"></div>
+                            <div id="bar-a2s" class="segment a2s-seg" style="width: 50%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FILTRES -->
+            <section class="control-panel">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="search-input" placeholder="Rechercher par nom, prénom, matricule...">
+                </div>
+
+                <div class="filters-group">
+                    <select id="filter-agency">
+                        <option value="">Toutes les Agences</option>
+                        <option value="Novacom">Novacom</option>
+                        <option value="A2S">A2S</option>
+                    </select>
+
+                    <select id="filter-department">
+                        <option value="">Tous les Départements</option>
+                        <option value="Informatique">Informatique</option>
+                        <option value="Ressources Humaines">Ressources Humaines</option>
+                        <option value="Logistique">Logistique</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Commercial">Commercial</option>
+                    </select>
+
+                    <select id="filter-status">
+                        <option value="">Tous les Statuts</option>
+                        <option value="actif">Actif</option>
+                        <option value="suspendu">Suspendu</option>
+                        <option value="inactif">Inactif</option>
+                    </select>
+                </div>
+
+                <div class="actions-group">
+                    <button id="btn-export-csv" class="btn btn-secondary">
+                        <i class="fa-solid fa-file-csv"></i> Export CSV
+                    </button>
+                    <button id="btn-open-modal" class="btn btn-primary admin-only">
+                        <i class="fa-solid fa-plus"></i> Nouvel Employé
+                    </button>
+                </div>
+            </section>
+
+            <!-- TABLEAU -->
+            <section class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Photo</th>
+                            <th>Matricule</th>
+                            <th>Nom & Prénom</th>
+                            <th>Poste / Dép.</th>
+                            <th>Agence</th>
+                            <th>Statut</th>
+                            <th>Embauche</th>
+                            <th>Documents</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employees-tbody">
+                        <!-- Chargé dynamiquement -->
+                    </tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODALE EMPLOYÉ (ÉDITION / CRÉATION) -->
+    <div id="employee-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Ajouter un Employé</h3>
+                <button class="modal-close" id="btn-close-modal">&times;</button>
+            </div>
+            <form id="employee-form">
+                <input type="hidden" id="emp-id">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Matricule *</label>
+                        <input type="text" id="emp-matricule" required placeholder="EX: NOV-102">
+                    </div>
+                    <div class="form-group">
+                        <label>Nom *</label>
+                        <input type="text" id="emp-nom" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Prénom *</label>
+                        <input type="text" id="emp-prenom" required>
+                    </div>
+                    <div class="form-group">
+                        <label>E-mail *</label>
+                        <input type="email" id="emp-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Téléphone</label>
+                        <input type="tel" id="emp-telephone">
+                    </div>
+                    <div class="form-group">
+                        <label>Poste *</label>
+                        <input type="text" id="emp-poste" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Département *</label>
+                        <select id="emp-departement" required>
+                            <option value="Informatique">Informatique</option>
+                            <option value="Ressources Humaines">Ressources Humaines</option>
+                            <option value="Logistique">Logistique</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Commercial">Commercial</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Agence *</label>
+                        <select id="emp-agence" required>
+                            <option value="Novacom">Novacom</option>
+                            <option value="A2S">A2S</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Date d'embauche *</label>
+                        <input type="date" id="emp-date-embauche" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Statut *</label>
+                        <select id="emp-statut" required>
+                            <option value="actif">Actif</option>
+                            <option value="suspendu">Suspendu</option>
+                            <option value="inactif">Inactif</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Photo de Profil (Avatar)</label>
+                        <input type="file" id="emp-photo-file" accept="image/*">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Ajouter un document (Contrat, ID, CV)</label>
+                        <div class="doc-upload-row">
+                            <select id="doc-type">
+                                <option value="contrat">Contrat</option>
+                                <option value="id_card">Pièce d'identité</option>
+                                <option value="cv">CV</option>
+                            </select>
+                            <input type="file" id="doc-file" accept=".pdf,image/*">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary" id="btn-save-employee">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODALE FICHE DÉTAILLÉE DE L'EMPLOYÉ (DETAILS) -->
+    <div id="details-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-id-card"></i> Fiche de l'Employé</h3>
+                <button class="modal-close" id="btn-close-details">&times;</button>
+            </div>
+            <div class="modal-body" id="details-modal-body">
+                <!-- Rempli dynamiquement -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE APERÇU DOCUMENT -->
+    <div id="preview-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3 id="preview-title">Aperçu du document</h3>
+                <button class="modal-close" id="btn-close-preview">&times;</button>
+            </div>
+            <div class="modal-body" id="preview-body"></div>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
