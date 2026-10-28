@@ -22,6 +22,101 @@ async function executeNeonQuery(queryText, params = []) {
     }
 }
 
+// ==========================================
+// AJOUT : RESPONSIVITÉ GLOBALE POUR TOUT ÉCRAN (CSS & MENU MOBILE)
+// ==========================================
+function injectResponsiveStyles() {
+    if (document.getElementById('dynamic-responsive-styles')) return;
+    const styleEl = document.createElement('style');
+    styleEl.id = 'dynamic-responsive-styles';
+    styleEl.textContent = `
+        /* Styles responsifs globaux pour tout écran */
+        @media (max-width: 1024px) {
+            .app-container, .main-layout {
+                flex-direction: column !important;
+            }
+            .sidebar {
+                width: 100% !important;
+                height: auto !important;
+                position: relative !important;
+            }
+            .main-content {
+                width: 100% !important;
+                padding: 15px !important;
+            }
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+                position: fixed !important;
+                top: 0; left: 0;
+                width: 260px !important;
+                height: 100vh !important;
+                z-index: 1000;
+                background: var(--bg-card, #1e293b);
+                box-shadow: 5px 0 15px rgba(0,0,0,0.3);
+                transition: transform 0.3s ease;
+            }
+            .sidebar.mobile-open {
+                display: flex !important;
+                flex-direction: column;
+            }
+            .mobile-menu-toggle {
+                display: inline-flex !important;
+                align-items: center;
+                justify-content: center;
+                background: #2563eb;
+                color: white;
+                border: none;
+                padding: 8px 12px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 1.1rem;
+                margin-right: 10px;
+            }
+            .table-responsive, table {
+                display: block;
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .modal-content, .custom-modal-content, .card {
+                width: 95% !important;
+                max-width: 100% !important;
+                margin: 10px auto !important;
+                padding: 15px !important;
+            }
+            .kpi-grid, .stats-grid, div[style*="grid-template-columns"] {
+                grid-template-columns: 1fr !important;
+            }
+        }
+        @media (min-width: 769px) {
+            .mobile-menu-toggle {
+                display: none !important;
+            }
+        }
+    `;
+    document.head.appendChild(styleEl);
+}
+
+function setupMobileSidebarToggle() {
+    const headerEl = document.querySelector('.top-bar') || document.querySelector('header') || document.querySelector('.app-header') || document.body;
+    if (headerEl && !document.getElementById('mobile-sidebar-toggle-btn')) {
+        const btn = document.createElement('button');
+        btn.id = 'mobile-sidebar-toggle-btn';
+        btn.className = 'mobile-menu-toggle';
+        btn.innerHTML = '<i class="fa-solid fa-bars"></i>';
+        btn.title = "Menu de navigation";
+        btn.onclick = () => {
+            const sidebar = document.querySelector('.sidebar') || document.querySelector('aside');
+            if (sidebar) {
+                sidebar.classList.toggle('mobile-open');
+            }
+        };
+        headerEl.prepend(btn);
+    }
+}
+
 function formatDateTime(dateStr) {
     if (!dateStr) return '-';
     const date = new Date(dateStr);
@@ -133,6 +228,8 @@ let currentAssignSiteId = null;
 // 2. AUTHENTIFICATION & NAVIGATION
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
+    injectResponsiveStyles();
+    setupMobileSidebarToggle();
     initEventListeners();
     checkSession();
 });
@@ -1446,7 +1543,7 @@ window.submitVigilDailyReport = async function(e) {
 };
 
 // ==========================================
-// NOUVELLE FONCTIONNALITÉ : CONTRÔLE VISITE & PRÉSENCE (TECHNICIENS / INTERVENANTS)
+// CONTRÔLE VISITE & PRÉSENCE (TECHNICIENS / INTERVENANTS)
 // ==========================================
 async function loadSiteControlVisits() {
     try {
@@ -1581,7 +1678,6 @@ window.submitSiteControlVisit = async function(e) {
                 const visitTimeFormatted = formatDateTime(visitTimestamp);
                 const visitorName = `${visitor.nom} ${visitor.prenom}`;
 
-                // Message d'absence exact requis
                 const absenceMessage = 
                     `*ALERTE : Absence du vigile*\n` +
                     `- Vigile affecté : ${vigilName}\n` +
@@ -1589,8 +1685,7 @@ window.submitSiteControlVisit = async function(e) {
                     `- Heure : ${visitTimeFormatted}\n` +
                     `- Constaté par : ${visitorName}`;
 
-                // Récupération des numéros WhatsApp des managers / admins / accès illimité enregistrés en base
-                let targetPhones = ["+243000000002"]; // Manager par défaut
+                let targetPhones = ["+243000000002"];
                 try {
                     const adminRows = await executeNeonQuery(`
                         SELECT e.telephone FROM employees e
@@ -1607,7 +1702,6 @@ window.submitSiteControlVisit = async function(e) {
                     console.warn("Erreur récupération numéros admins:", errAdmin);
                 }
 
-                // Envoi WhatsApp aux numéros enregistrés
                 targetPhones.forEach(phone => {
                     const cleanPhone = phone.replace(/[^0-9+]/g, '');
                     window.open(`https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(absenceMessage)}`, '_blank');
