@@ -9,7 +9,7 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabaseLib = window.supabase || supabase;
 const supabaseClient = supabaseLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const NEON_DB_URL = "postgresql://neondb_owner:npg_L6ARyzgiPY4o@ep-dry-math-b4gazyu1-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=require";
+const NEON_DB_URL = window.NEON_DB_URL || "postgresql://neondb_owner:VOTRE_NOUVEAU_MOT_DE_PASSE@.../neondb?sslmode=require";
 const sql = neon(NEON_DB_URL);
 
 async function executeNeonQuery(queryText, params = []) {
